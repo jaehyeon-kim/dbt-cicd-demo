@@ -1,0 +1,18 @@
+name: slim-ci
+
+on:
+  # push:
+  #   branches: ["main"]
+  # pull_request:
+  #   branches: ["main"]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+
+jobs:
+  dbt-run:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
