@@ -16,11 +16,9 @@ class QueryHelper:
 
     def get_credentials(self):
         # https://cloud.google.com/bigquery/docs/samples/bigquery-client-json-credentials#bigquery_client_json_credentials-python
-        sa_key_path = os.path.join(
-            os.path.dirname(self.current_dir), "sa_key", "key.json"
-        )
         return service_account.Credentials.from_service_account_file(
-            sa_key_path, scopes=["https://www.googleapis.com/auth/cloud-platform"]
+            os.environ["SA_KEYFILE"],
+            scopes=["https://www.googleapis.com/auth/cloud-platform"],
         )
 
     def get_table(self, dataset_name: str, table_name: str):
