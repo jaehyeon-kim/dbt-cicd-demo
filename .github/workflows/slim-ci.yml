@@ -49,9 +49,9 @@ jobs:
         run: |
           dbt deps --profiles-dir=config --project-dir=pizza_shop --target ci_defer
 
-      - name: DBT Run
+      - name: DBT Slim CI
         env:
           GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
           SA_KEYFILE: ${{github.workspace}}/.github/key.json
         run: |
-          dbt debug --profiles-dir=config --project-dir=pizza_shop --target ci_defer
+          dbt run --profiles-dir=config --project-dir=pizza_shop --target ci_defer --select state:modified+ --state prod-run-artifacts
