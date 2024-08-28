@@ -35,15 +35,23 @@ jobs:
         run: |
           pip install -r requirements.txt
 
-      - name: Install dbt dependencies
-        run: |
-          dbt deps --project-dir dbt
-
-      - name: DBT Run
+      - name: Set up sa keyfile
         env:
           GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
-          export SA_KEYFILE=${{github.workspace}}/.github/key.json
-          dbt debug --target ci_defer
+
+      - name: Install dbt dependencies
+        env:
+          GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
+          SA_KEYFILE: ${{github.workspace}}/.github/key.json
+        run: |
+          dbt deps --profiles-dir=config --project-dir=pizza_shop --target ci_defer
+
+      - name: DBT Run
+        env:
+          GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
+          SA_KEYFILE: ${{github.workspace}}/.github/key.json
+        run: |
+          dbt debug --profiles-dir=config --project-dir=pizza_shop --target ci_defer
