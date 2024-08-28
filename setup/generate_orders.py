@@ -31,7 +31,8 @@ if __name__ == "__main__":
         python generate_orders.py
         NUM_ORDERS=10000 python generate_orders.py
     """
-    NUM_ORDERS = int(os.getenv("NUM_ORDERS", "20000"))
+    random.seed(1237)
+    NUM_ORDERS = int(os.getenv("NUM_ORDERS", "2000"))
     CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
     orders = [Order.create() for _ in range(NUM_ORDERS)]
 
