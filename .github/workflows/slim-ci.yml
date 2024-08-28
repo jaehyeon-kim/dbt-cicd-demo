@@ -28,10 +28,14 @@ jobs:
 
       - name: Install dependencies
         run: |
+          python -m venv venv
+          source venv/bin/activate
           pip install -r requirements.txt
 
       - name: Install dbt dependencies
-        run: dbt deps --project-dir dbt
+        run: |
+          source venv/bin/activate
+          dbt deps --project-dir dbt
 
       - name: DBT Run
         env:
