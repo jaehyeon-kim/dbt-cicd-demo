@@ -26,13 +26,14 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Install dependencies
+      - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
+
+      - name: Install dependencies
+        run: |
           pip install -r requirements.txt
-          # Ensure venv is on the path for other steps
-          echo PATH=$PATH >> $GITHUB_ENV
 
       - name: Install dbt dependencies
         run: |
