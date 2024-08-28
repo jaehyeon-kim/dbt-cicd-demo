@@ -12,6 +12,7 @@ pizza_shop:
       job_execution_timeout_seconds: 300
       job_retries: 1
       priority: interactive
+      location: australia-southeast1
     ci_defer:
       type: bigquery
       method: service-account
@@ -22,6 +23,7 @@ pizza_shop:
       job_execution_timeout_seconds: 300
       job_retries: 1
       priority: interactive
+      location: australia-southeast1
     ci_clone:
       type: bigquery
       method: service-account
@@ -32,4 +34,5 @@ pizza_shop:
       job_execution_timeout_seconds: 300
       job_retries: 1
       priority: interactive
+      location: australia-southeast1
   target: dev
