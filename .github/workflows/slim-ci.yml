@@ -3,11 +3,15 @@ name: slim-ci
 on:
   # push:
   #   branches: ["main"]
-  # pull_request:
-  #   branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
+
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  DBT_PROFILES_DIR: "${{github.workspace}}/config"
 
 jobs:
   dbt-run:
@@ -16,3 +20,24 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Install dbt dependencies
+        run: dbt deps --project-dir dbt
+
+      - name: DBT Run
+        env:
+          GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
+          export SA_KEYFILE=${{github.workspace}}/.github/key.json
+          dbt debug --target ci_defer
