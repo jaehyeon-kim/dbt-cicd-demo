@@ -11,7 +11,7 @@ on:
 
 env:
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-  DBT_PROFILES_DIR: "${{github.workspace}}/config"
+  DBT_PROFILES_DIR: "${{github.workspace}}/dbt_profiles"
 
 jobs:
   dbt-run:
@@ -26,33 +26,28 @@ jobs:
         with:
           python-version: "3.10"
 
-      - name: Create and start virtual environment
+      - name: Install dependencies
         run: |
           python -m venv venv
           source venv/bin/activate
-
-      - name: Install dependencies
-        run: |
           pip install -r requirements.txt
 
-      - name: Set up sa keyfile
+      - name: Set up service account key file
         env:
-          GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
+          echo SA_KEYFILE= ${{github.workspace}}/.github/key.json >> $GITHUB_ENV
 
       - name: Install dbt dependencies
-        env:
-          GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
-          SA_KEYFILE: ${{github.workspace}}/.github/key.json
         run: |
-          dbt deps --profiles-dir=config --project-dir=pizza_shop --target ci_defer
+          dbt deps --project-dir=pizza_shop --target ci
+          echo $GCP_SA_KEY
 
-      - name: DBT Slim CI
-        env:
-          GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
-          SA_KEYFILE: ${{github.workspace}}/.github/key.json
-        run: |
-          dbt run --profiles-dir=config --project-dir=pizza_shop --target ci_defer
-          # dbt run --profiles-dir=config --project-dir=pizza_shop --target ci_defer --select state:modified+ --state prod-run-artifacts
+      # - name: DBT Slim CI
+      #   env:
+      #     GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
+      #     SA_KEYFILE: ${{github.workspace}}/.github/key.json
+      #   run: |
+      #     dbt run --profiles-dir=dbt_profiles --project-dir=pizza_shop --target ci
+      #     # dbt run --profiles-dir=dbt_profiles --project-dir=pizza_shop --target ci --select state:modified+ --state prod-run-artifacts
