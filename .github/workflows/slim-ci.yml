@@ -58,5 +58,6 @@ jobs:
 
       - name: DBT Slim CI
         run: |
-          dbt run --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
+          export CI_PREFIX=ci_$(date +'%y%m%d_%S')_$(git rev-parse --short "$GITHUB_SHA")
+          dbt build --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
             --select state:modified+ --state ${{github.workspace}}
