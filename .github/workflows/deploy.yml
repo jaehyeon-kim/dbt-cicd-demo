@@ -1,6 +1,8 @@
 name: deploy
 
 on:
+  pull_request:
+    branches: ["main"]
   # workflow_run:
   #   workflows: ["slim-ci"]
   #   branches: [main]
@@ -9,10 +11,39 @@ on:
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+env:
+  GCP_LOCATION: australia-southeast1
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+
 jobs:
-  build_n_push:
+  dbt_deploy:
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Set up service account key file
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
+          echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
+
+      - name: Authenticate to GCP
+        run: |
+          gcloud auth activate-service-account \
+            dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
+
+      - name: Configure docker
+        run: |
+          gcloud auth configure-docker ${{ env.GCP_LOCATION }}-docker.pkg.dev --quiet
+
+      - name: Docker build and push
+        run: |
+          export DOCKER_TAG=${{ env.GCP_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/dbt-cicd-demo/dbt:$(git rev-parse --short "$GITHUB_SHA")
+          docker build -t ${DOCKER_TAG} .
+          docker push ${DOCKER_TAG}

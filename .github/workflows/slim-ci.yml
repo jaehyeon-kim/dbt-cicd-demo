@@ -3,8 +3,8 @@ name: slim-ci
 on:
   # push:
   #   branches: ["main"]
-  pull_request:
-    branches: ["main"]
+  # pull_request:
+  #   branches: ["main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -54,7 +54,7 @@ jobs:
 
       - name: Install dbt dependencies
         run: |
-          dbt deps --project-dir=pizza_shop --target ci
+          dbt deps --project-dir=pizza_shop
 
       - name: DBT Slim CI
         run: |
