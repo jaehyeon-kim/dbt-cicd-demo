@@ -11,7 +11,8 @@ on:
 
 env:
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
-  DBT_PROFILES_DIR: "${{github.workspace}}/dbt_profiles"
+  DBT_PROFILES_DIR: ${{github.workspace}}/dbt_profiles
+  DBT_ARTIFACT_PATH: gs://dbt-cicd-demo/artifact/manifest.json
 
 jobs:
   dbt-run:
@@ -40,17 +41,22 @@ jobs:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
-          echo SA_KEYFILE= ${{github.workspace}}/.github/key.json >> $GITHUB_ENV
+          echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
+
+      - name: Authenticate to GCP
+        run: |
+          gcloud auth activate-service-account \
+            dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
+
+      - name: Download dbt manifest
+        run: gsutil cp ${{ env.DBT_ARTIFACT_PATH }} ${{github.workspace}}
 
       - name: Install dbt dependencies
         run: |
           dbt deps --project-dir=pizza_shop --target ci
-          echo $GCP_SA_KEY
 
-      # - name: DBT Slim CI
-      #   env:
-      #     GCP_PROJECT: ${{ env.GCP_PROJECT_ID }}
-      #     SA_KEYFILE: ${{github.workspace}}/.github/key.json
-      #   run: |
-      #     dbt run --profiles-dir=dbt_profiles --project-dir=pizza_shop --target ci
-      #     # dbt run --profiles-dir=dbt_profiles --project-dir=pizza_shop --target ci --select state:modified+ --state prod-run-artifacts
+      - name: DBT Slim CI
+        run: |
+          dbt run --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
+            --select state:modified+ --state ${{github.workspace}}
