@@ -5,7 +5,7 @@ pizza_shop:
     dev:
       type: bigquery
       method: service-account
-      project: "{{ env_var('GCP_PROJECT') }}"
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
       dataset: pizza_shop
       threads: 4
       keyfile: "{{ env_var('SA_KEYFILE') }}"
@@ -16,7 +16,7 @@ pizza_shop:
     ci:
       type: bigquery
       method: service-account
-      project: "{{ env_var('GCP_PROJECT') }}"
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
       dataset: "{{ env_var('CI_DATASET') }}"
       threads: 4
       keyfile: "{{ env_var('SA_KEYFILE') }}"
