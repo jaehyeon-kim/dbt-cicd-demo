@@ -1,12 +1,8 @@
 name: deploy
 
 on:
-  # pull_request:
-  #   branches: ["main"]
-  # workflow_run:
-  #   workflows: ["slim-ci"]
-  #   branches: [main]
-  #   types: ["completed"]
+  pull_request:
+    branches: ["main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -14,38 +10,73 @@ on:
 env:
   GCP_LOCATION: australia-southeast1
   GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  DBT_PROFILES_DIR: ${{github.workspace}}/dbt_profiles
 
 jobs:
-  dbt_test:
+  dbt-unit-test:
     runs-on: ubuntu-latest
-    # if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: "Upload Artifact"
-        uses: actions/upload-artifact@v4
+      - name: Set up Python
+        uses: actions/setup-python@v1
         with:
-          name: dbt-project
-          path: pizza_shop
-          retention-days: 1
+          python-version: "3.10"
 
-  dbt_deploy:
-    runs-on: ubuntu-latest
-    needs: dbt_test
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Download a single artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: dbt-project
-
-      - name: Check artifact
+      - name: Create and start virtual environment
         run: |
           python -m venv venv
           source venv/bin/activate
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Set up service account key file
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
+          echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
+
+      - name: Authenticate to GCP
+        run: |
+          gcloud auth activate-service-account \
+            dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
+
+      - name: Install dbt dependencies
+        run: |
+          dbt deps --project-dir=pizza_shop
+
+      - name: Build modified dbt models and its first-order children
+        run: |
+          export CI_DATASET=ci_$(date +'%y%m%d_%S')_$(git rev-parse --short "$GITHUB_SHA")
+          # build all the models that the unit tests need to run, but empty
+          dbt run --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
+            --select +test_type:unit --empty
+          # perform the actual unit tests 
+          dbt test --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
+            --select test_type:unit
+
+  # dbt_deploy:
+  #   runs-on: ubuntu-latest
+  #   needs: dbt_test
+  #   steps:
+  #     - name: Checkout
+  #       uses: actions/checkout@v3
+
+  #     - name: Download a single artifact
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: dbt-project
+
+  #     - name: Check artifact
+  #       run: |
+  #         python -m venv venv
+  #         source venv/bin/activate
   # dbt_deploy:
   #   runs-on: ubuntu-latest
   #   needs: dbt_test
