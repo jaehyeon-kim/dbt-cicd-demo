@@ -19,80 +19,80 @@ env:
   DBT_PROFILES_DIR: ${{github.workspace}}/dbt_profiles
 
 jobs:
-  # dbt-unit-tests:
-  #   runs-on: ubuntu-latest
+  dbt-unit-tests:
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v1
-  #       with:
-  #         python-version: "3.10"
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.10"
 
-  #     - name: Create and start virtual environment
-  #       run: |
-  #         python -m venv venv
-  #         source venv/bin/activate
+      - name: Create and start virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
 
-  #     - name: Install dependencies
-  #       run: |
-  #         pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
 
-  #     - name: Set up service account key file
-  #       env:
-  #         GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-  #       run: |
-  #         echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
-  #         echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
+      - name: Set up service account key file
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
+          echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
 
-  #     - name: Set up ci dataset
-  #       run: |
-  #         echo CI_DATASET=ci_$(date +'%y%m%d_%S')_$(git rev-parse --short "$GITHUB_SHA") >> $GITHUB_ENV
+      - name: Set up ci dataset
+        run: |
+          echo CI_DATASET=ci_$(date +'%y%m%d_%S')_$(git rev-parse --short "$GITHUB_SHA") >> $GITHUB_ENV
 
-  #     - name: Authenticate to GCP
-  #       run: |
-  #         gcloud auth activate-service-account \
-  #           dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
-  #           --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
+      - name: Authenticate to GCP
+        run: |
+          gcloud auth activate-service-account \
+            dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
 
-  #     - name: Install dbt dependencies
-  #       run: |
-  #         dbt deps --project-dir=pizza_shop
+      - name: Install dbt dependencies
+        run: |
+          dbt deps --project-dir=pizza_shop
 
-  #     - name: Run dbt unit tests
-  #       run: |
-  #         # build all the models that the unit tests need to run, but empty
-  #         dbt run --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
-  #           --select +test_type:unit --empty
-  #         # perform the actual unit tests
-  #         dbt test --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
-  #           --select test_type:unit
+      - name: Run dbt unit tests
+        run: |
+          # build all the models that the unit tests need to run, but empty
+          dbt run --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
+            --select +test_type:unit --empty
+          # perform the actual unit tests
+          dbt test --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
+            --select test_type:unit
 
-  #     # Hacky way of getting around the bq outputting annoying welcome stuff on first run which breaks jq
-  #     - name: Check existing CI datasets
-  #       if: always()
-  #       shell: bash -l {0}
-  #       run: bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json
+      # Hacky way of getting around the bq outputting annoying welcome stuff on first run which breaks jq
+      - name: Check existing CI datasets
+        if: always()
+        shell: bash -l {0}
+        run: bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json
 
-  #     - name: Clean up CI datasets
-  #       if: always()
-  #       shell: bash -l {0}
-  #       run: |
-  #         for dataset in $(bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json | jq -r '.[].datasetReference.datasetId')
-  #         do
-  #           # If the dataset starts with the prefix, delete it
-  #           if [[ $dataset == $CI_DATASET* ]]; then
-  #             echo "Deleting $dataset"
-  #             bq rm -r -f $dataset
-  #           fi
-  #         done
+      - name: Clean up CI datasets
+        if: always()
+        shell: bash -l {0}
+        run: |
+          for dataset in $(bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json | jq -r '.[].datasetReference.datasetId')
+          do
+            # If the dataset starts with the prefix, delete it
+            if [[ $dataset == $CI_DATASET* ]]; then
+              echo "Deleting $dataset"
+              bq rm -r -f $dataset
+            fi
+          done
 
   dbt-deploy:
     runs-on: ubuntu-latest
 
-    # needs: dbt-unit-tests
+    needs: dbt-unit-tests
 
     steps:
       - name: Checkout
@@ -125,63 +125,63 @@ jobs:
             -t ${DOCKER_TAG} ./
           docker push ${DOCKER_TAG}
 
-  # dbt-docs:
-  #   environment:
-  #     name: github-pages
-  #     url: ${{ steps.deployment.outputs.page_url }}
+  dbt-docs:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
 
-  #   runs-on: ubuntu-latest
+    runs-on: ubuntu-latest
 
-  #   # needs: dbt-unit-tests
+    needs: dbt-unit-tests
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-  #     - name: Set up Python
-  #       uses: actions/setup-python@v1
-  #       with:
-  #         python-version: "3.10"
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.10"
 
-  #     - name: Create and start virtual environment
-  #       run: |
-  #         python -m venv venv
-  #         source venv/bin/activate
+      - name: Create and start virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
 
-  #     - name: Install dependencies
-  #       run: |
-  #         pip install -r requirements.txt
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
 
-  #     - name: Set up service account key file
-  #       env:
-  #         GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-  #       run: |
-  #         echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
-  #         echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
+      - name: Set up service account key file
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
+          echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
 
-  #     - name: Authenticate to GCP
-  #       run: |
-  #         gcloud auth activate-service-account \
-  #           dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
-  #           --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
+      - name: Authenticate to GCP
+        run: |
+          gcloud auth activate-service-account \
+            dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
 
-  #     - name: Generate dbt docs
-  #       id: docs
-  #       shell: bash -l {0}
-  #       run: |
-  #         dbt deps --project-dir=pizza_shop
-  #         dbt docs generate --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop \
-  #           --target dev --target-path dbt-docs
+      - name: Generate dbt docs
+        id: docs
+        shell: bash -l {0}
+        run: |
+          dbt deps --project-dir=pizza_shop
+          dbt docs generate --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop \
+            --target dev --target-path dbt-docs
 
-  #     - name: Upload DBT docs Pages artifact
-  #       id: build
-  #       uses: actions/upload-pages-artifact@v2
-  #       with:
-  #         path: pizza_shop/dbt-docs
-  #         name: dbt-docs
+      - name: Upload DBT docs Pages artifact
+        id: build
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: pizza_shop/dbt-docs
+          name: dbt-docs
 
-  #     - name: Publish DBT docs to GitHub Pages
-  #       id: deployment
-  #       uses: actions/deploy-pages@v2
-  #       with:
-  #         artifact_name: dbt-docs
+      - name: Publish DBT docs to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
+        with:
+          artifact_name: dbt-docs
