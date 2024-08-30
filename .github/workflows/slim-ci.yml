@@ -13,7 +13,7 @@ env:
   DBT_ARTIFACT_PATH: gs://dbt-cicd-demo/artifact/manifest.json
 
 jobs:
-  dbt-run:
+  dbt-slim-ci:
     runs-on: ubuntu-latest
 
     steps:

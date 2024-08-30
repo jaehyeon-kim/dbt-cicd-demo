@@ -13,7 +13,7 @@ env:
   DBT_PROFILES_DIR: ${{github.workspace}}/dbt_profiles
 
 jobs:
-  dbt-unit-test:
+  dbt-unit-tests:
     runs-on: ubuntu-latest
 
     steps:
@@ -83,49 +83,50 @@ jobs:
             fi
           done
 
-  # dbt_deploy:
-  #   runs-on: ubuntu-latest
-  #   needs: dbt_test
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
+  dbt-deploy:
+    runs-on: ubuntu-latest
+    needs: dbt-unit-tests
 
-  #     - name: Download a single artifact
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: dbt-project
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-  #     - name: Check artifact
-  #       run: |
-  #         python -m venv venv
-  #         source venv/bin/activate
-  # dbt_deploy:
-  #   runs-on: ubuntu-latest
-  #   needs: dbt_test
+      - name: Set up service account key file
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
+          echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
 
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v3
+      - name: Authenticate to GCP
+        run: |
+          gcloud auth activate-service-account \
+            dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
 
-  #     - name: Set up service account key file
-  #       env:
-  #         GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
-  #       run: |
-  #         echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
-  #         echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
+      - name: Configure docker
+        run: |
+          gcloud auth configure-docker ${{ env.GCP_LOCATION }}-docker.pkg.dev --quiet
 
-  #     - name: Authenticate to GCP
-  #       run: |
-  #         gcloud auth activate-service-account \
-  #           dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
-  #           --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
+      - name: Docker build and push
+        run: |
+          export DOCKER_TAG=${{ env.GCP_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/dbt-cicd-demo/dbt:$(git rev-parse --short "$GITHUB_SHA")
+          docker build -t ${DOCKER_TAG} .
+          docker push ${DOCKER_TAG}
 
-  #     - name: Configure docker
-  #       run: |
-  #         gcloud auth configure-docker ${{ env.GCP_LOCATION }}-docker.pkg.dev --quiet
+  dbt-docs:
+    runs-on: ubuntu-latest
+    needs: dbt-unit-tests
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
 
-  #     - name: Docker build and push
-  #       run: |
-  #         export DOCKER_TAG=${{ env.GCP_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/dbt-cicd-demo/dbt:$(git rev-parse --short "$GITHUB_SHA")
-  #         docker build -t ${DOCKER_TAG} .
-  #         docker push ${DOCKER_TAG}
+      - name: Download a single artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dbt-project
+
+      - name: Check artifact
+        run: |
+          python -m venv venv
+          source venv/bin/activate
