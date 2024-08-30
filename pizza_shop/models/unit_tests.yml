@@ -1,0 +1,20 @@
+unit_tests:
+  - name: test_is_valid_date_ranges
+    model: dim_users
+    given:
+      - input: ref('src_users')
+        rows:
+          - { created_at: 2024-08-29T10:29:49 }
+          - { created_at: 2024-08-30T10:29:49 }
+    expect:
+      rows:
+        - {
+            created_at: 2024-08-29T10:29:49,
+            valid_from: 2024-08-29T10:29:49,
+            valid_to: 2024-08-30T10:29:49,
+          }
+        - {
+            created_at: 2024-08-30T10:29:49,
+            valid_from: 2024-08-30T10:29:49,
+            valid_to: 2199-12-31T00:00:00,
+          }

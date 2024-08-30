@@ -1,10 +1,8 @@
 name: slim-ci
 
 on:
-  # push:
-  #   branches: ["main"]
-  # pull_request:
-  #   branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -56,7 +54,7 @@ jobs:
         run: |
           dbt deps --project-dir=pizza_shop
 
-      - name: DBT Slim CI
+      - name: Build modified dbt models and its first-order children
         run: |
           export CI_DATASET=ci_$(date +'%y%m%d_%S')_$(git rev-parse --short "$GITHUB_SHA")
           dbt build --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
