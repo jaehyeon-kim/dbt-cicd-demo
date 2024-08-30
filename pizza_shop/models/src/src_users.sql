@@ -3,12 +3,12 @@ WITH raw_users AS (
 )
 SELECT
   {{ dbt_utils.generate_surrogate_key(['first_name', 'last_name', 'email', 'residence', 'lat', 'lon']) }} as user_key,
-  id AS user_id,
+  ROW_NUMBER() OVER() AS user_id,
   first_name,
   last_name,
   email,
   residence,
   lat AS latitude,
   lon AS longitude,
-  created_at
+  current_datetime() AS created_at
 FROM raw_users

@@ -1,18 +1,83 @@
 name: slim-ci
 
 on:
-  # push:
-  #   branches: ["main"]
-  # pull_request:
-  #   branches: ["main"]
+  pull_request:
+    branches: ["main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
+env:
+  GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+  DBT_PROFILES_DIR: ${{github.workspace}}/dbt_profiles
+  DBT_ARTIFACT_PATH: gs://dbt-cicd-demo/artifact/manifest.json
+
 jobs:
-  dbt-run:
+  dbt-slim-ci:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: "3.10"
+
+      - name: Create and start virtual environment
+        run: |
+          python -m venv venv
+          source venv/bin/activate
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Set up service account key file
+        env:
+          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+        run: |
+          echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
+          echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
+
+      - name: Set up ci dataset
+        run: |
+          echo CI_DATASET=ci_$(date +'%y%m%d_%S')_$(git rev-parse --short "$GITHUB_SHA") >> $GITHUB_ENV
+
+      - name: Authenticate to GCP
+        run: |
+          gcloud auth activate-service-account \
+            dbt-cicd@${{ env.GCP_PROJECT_ID }}.iam.gserviceaccount.com \
+            --key-file $SA_KEYFILE --project ${{ env.GCP_PROJECT_ID }}
+
+      - name: Download dbt manifest
+        run: gsutil cp ${{ env.DBT_ARTIFACT_PATH }} ${{github.workspace}}
+
+      - name: Install dbt dependencies
+        run: |
+          dbt deps --project-dir=pizza_shop
+
+      - name: Build modified dbt models and its first-order children
+        run: |
+          dbt build --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
+            --select state:modified+ --state ${{github.workspace}}
+
+      # Hacky way of getting around the bq outputting annoying welcome stuff on first run which breaks jq
+      - name: Check existing CI datasets
+        if: always()
+        shell: bash -l {0}
+        run: bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json
+
+      - name: Clean up CI datasets
+        if: always()
+        shell: bash -l {0}
+        run: |
+          for dataset in $(bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json | jq -r '.[].datasetReference.datasetId')
+          do
+            # If the dataset starts with the prefix, delete it
+            if [[ $dataset == $CI_DATASET* ]]; then
+              echo "Deleting $dataset"
+              bq rm -r -f $dataset
+            fi
+          done
