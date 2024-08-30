@@ -41,6 +41,10 @@ jobs:
           echo ${GCP_SA_KEY} > ${{github.workspace}}/.github/key.json
           echo SA_KEYFILE=${{github.workspace}}/.github/key.json >> $GITHUB_ENV
 
+      - name: Set up ci dataset
+        run: |
+          echo CI_DATASET=ci_$(date +'%y%m%d_%S')_$(git rev-parse --short "$GITHUB_SHA") >> $GITHUB_ENV
+
       - name: Authenticate to GCP
         run: |
           gcloud auth activate-service-account \
@@ -51,15 +55,33 @@ jobs:
         run: |
           dbt deps --project-dir=pizza_shop
 
-      - name: Build modified dbt models and its first-order children
+      - name: Run dbt unit tests
         run: |
-          export CI_DATASET=ci_$(date +'%y%m%d_%S')_$(git rev-parse --short "$GITHUB_SHA")
           # build all the models that the unit tests need to run, but empty
           dbt run --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
             --select +test_type:unit --empty
           # perform the actual unit tests 
           dbt test --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
             --select test_type:unit
+
+      # Hacky way of getting around the bq outputting annoying welcome stuff on first run which breaks jq
+      - name: Check existing CI datasets
+        if: always()
+        shell: bash -l {0}
+        run: bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json
+
+      - name: Clean up CI datasets
+        if: always()
+        shell: bash -l {0}
+        run: |
+          for dataset in $(bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json | jq -r '.[].datasetReference.datasetId')
+          do
+            # If the dataset starts with the prefix, delete it
+            if [[ $dataset == $CI_DATASET* ]]; then
+              echo "Deleting $dataset"
+              bq rm -r -f $dataset
+            fi
+          done
 
   # dbt_deploy:
   #   runs-on: ubuntu-latest
