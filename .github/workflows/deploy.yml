@@ -119,7 +119,7 @@ jobs:
         env:
           GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
-          echo ${GCP_SA_KEY} > ${{github.workspace}}/key.json
+          cp $SA_KEYFILE key.json
           export DOCKER_TAG=${{ env.GCP_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/dbt-cicd-demo/dbt:$(git rev-parse --short "$GITHUB_SHA")
           docker build \
             --build-arg GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }} \
