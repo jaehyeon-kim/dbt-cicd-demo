@@ -167,7 +167,7 @@ jobs:
         id: build
         uses: actions/upload-pages-artifact@v2
         with:
-          path: dbt/dbt-docs
+          path: pizza_shop/dbt-docs
           name: dbt-docs
 
       - name: Publish DBT docs to GitHub Pages
