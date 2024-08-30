@@ -117,7 +117,7 @@ jobs:
 
       - name: Docker build and push
         run: |
-          cp $SA_KEYFILE key.json
+          cp ${{github.workspace}}/.github/key.json ${{github.workspace}}/key.json
           export DOCKER_TAG=${{ env.GCP_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/dbt-cicd-demo/dbt:$(git rev-parse --short "$GITHUB_SHA")
           docker build \
             --build-arg GCP_PROJECT_ID=${{ env.GCP_PROJECT_ID }} \
