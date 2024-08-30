@@ -1,0 +1,25 @@
+version: 2
+
+seeds:
+  - name: staging_users
+    config:
+      column_types:
+        first_name: string
+        last_name: string
+        email: string
+        residence: string
+        lat: float64
+        lon: float64
+  - name: staging_products
+    config:
+      column_types:
+        name: string
+        description: string
+        price: float64
+        category: string
+        image: string
+  - name: staging_orders
+    config:
+      column_types:
+        user_id: integer
+        items: json

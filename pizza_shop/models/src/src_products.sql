@@ -3,11 +3,11 @@ WITH raw_products AS (
 )
 SELECT
   {{ dbt_utils.generate_surrogate_key(['name', 'description', 'price', 'category', 'image']) }} as product_key,
-  id AS product_id,
+  ROW_NUMBER() OVER() AS product_id,
   name,
   description,
   price,
   category,
   image,
-  created_at
+  current_datetime() AS created_at
 FROM raw_products

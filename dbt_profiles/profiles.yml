@@ -1,0 +1,27 @@
+send_anonymous_usage_stats: false
+
+pizza_shop:
+  outputs:
+    dev:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: pizza_shop
+      threads: 4
+      keyfile: "{{ env_var('SA_KEYFILE') }}"
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      priority: interactive
+      location: australia-southeast1
+    ci:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: "{{ env_var('CI_DATASET') }}"
+      threads: 4
+      keyfile: "{{ env_var('SA_KEYFILE') }}"
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      priority: interactive
+      location: australia-southeast1
+  target: dev

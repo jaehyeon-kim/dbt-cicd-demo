@@ -24,6 +24,7 @@ WITH dim_products AS (
 )
 SELECT
   o.order_id,
+  'foo' AS bar,
   ARRAY_AGG(
     STRUCT(p.product_key AS key, o.product_id AS id, p.name, p.price, o.quantity, p.description, p.category, p.image)
   ) as product,
