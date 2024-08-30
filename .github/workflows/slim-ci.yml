@@ -61,7 +61,7 @@ jobs:
       - name: Build modified dbt models and its first-order children
         run: |
           dbt build --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
-            --select state:modified --state ${{github.workspace}}
+            --select state:modified+ --state ${{github.workspace}}
 
       ## If uncommented, the CI datasets will be deleted
       # # Hacky way of getting around the bq outputting annoying welcome stuff on first run which breaks jq
