@@ -116,8 +116,6 @@ jobs:
           gcloud auth configure-docker ${{ env.GCP_LOCATION }}-docker.pkg.dev --quiet
 
       - name: Docker build and push
-        env:
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
         run: |
           cp $SA_KEYFILE key.json
           export DOCKER_TAG=${{ env.GCP_LOCATION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/dbt-cicd-demo/dbt:$(git rev-parse --short "$GITHUB_SHA")
