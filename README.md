@@ -1,1 +1,9 @@
-# DBT CI/CD Demo
+# DBT CI/CD Demo with BigQuery and GitHub Actions
+
+Continuous integration (CI) is the process of ensuring new code integrates with the larger code base, and it puts a great emphasis on testing automation to check that the application is not broken whenever new commits are integrated into the main branch. Continuous delivery (CD) is an extension of continuous integration since it automatically deploys all code changes to a testing and/or production environment after the build stage. CI/CD helps development teams avoid bugs and code failures while maintaining a continuous cycle of software development and updates. In this post, we discuss how to set up a CI/CD pipeline for a [data build tool (_dbt_)](https://www.getdbt.com/) project using [GitHub Actions](https://github.com/features/actions) where [BigQuery](https://cloud.google.com/bigquery?hl=en) is used as the target data warehouse.
+
+The CI/CD process has two workflows - `slim-ci` and `deploy`. When a pull request is created to the main branch, the `slim-ci` workflow is triggered, and it aims to perform tests after building only modified models and its first-order children in a _ci_ dataset. Thanks to the [defer feature](https://docs.getdbt.com/reference/node-selection/defer) and [state method](https://docs.getdbt.com/reference/node-selection/methods#the-state-method), it saves time and computational resources for testing a few models in a _dbt_ project. When a pull request is merged to the main branch, the `deploy` workflow is triggered. It begins with performing [unit tests](https://docs.getdbt.com/docs/build/unit-tests) to validate key SQL modelling logic on a small set of static inputs. Once the tests are complete successfully, two jobs are triggered concurrently. The first job builds a Docker container that packages the _dbt_ model and pushes into _Artifact Registry_ while the second one publishes the project documentation into _GitHub Pages_.
+
+Visit [this post](https://jaehyeon.me/blog/2024-09-05-dbt-cicd-demo/) for more details.
+
+![](images/featured.png#center)
