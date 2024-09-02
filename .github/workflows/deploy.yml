@@ -1,8 +1,8 @@
 name: deploy
 
 on:
-  push:
-    branches: ["main"]
+  # push:
+  #   branches: ["main"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -70,25 +70,24 @@ jobs:
           dbt test --profiles-dir=${{ env.DBT_PROFILES_DIR }} --project-dir=pizza_shop --target ci \
             --select test_type:unit
 
-      ## If uncommented, the CI datasets will be deleted
-      # # Hacky way of getting around the bq outputting annoying welcome stuff on first run which breaks jq
-      # - name: Check existing CI datasets
-      #   if: always()
-      #   shell: bash -l {0}
-      #   run: bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json
+      # Hacky way of getting around the bq outputting annoying welcome stuff on first run which breaks jq
+      - name: Check existing CI datasets
+        if: always()
+        shell: bash -l {0}
+        run: bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json
 
-      # - name: Clean up CI datasets
-      #   if: always()
-      #   shell: bash -l {0}
-      #   run: |
-      #     for dataset in $(bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json | jq -r '.[].datasetReference.datasetId')
-      #     do
-      #       # If the dataset starts with the prefix, delete it
-      #       if [[ $dataset == $CI_DATASET* ]]; then
-      #         echo "Deleting $dataset"
-      #         bq rm -r -f $dataset
-      #       fi
-      #     done
+      - name: Clean up CI datasets
+        if: always()
+        shell: bash -l {0}
+        run: |
+          for dataset in $(bq ls --project_id=${{ env.GCP_PROJECT_ID }} --quiet=true --headless=true --format=json | jq -r '.[].datasetReference.datasetId')
+          do
+            # If the dataset starts with the prefix, delete it
+            if [[ $dataset == $CI_DATASET* ]]; then
+              echo "Deleting $dataset"
+              bq rm -r -f $dataset
+            fi
+          done
 
   dbt-deploy:
     runs-on: ubuntu-latest
