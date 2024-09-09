@@ -24,4 +24,26 @@ pizza_shop:
       job_retries: 1
       priority: interactive
       location: australia-southeast1
+    prod:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: pizza_shop_prod
+      threads: 4
+      keyfile: "{{ env_var('SA_KEYFILE') }}"
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      priority: interactive
+      location: australia-southeast1
+    clone:
+      type: bigquery
+      method: service-account
+      project: "{{ env_var('GCP_PROJECT_ID') }}"
+      dataset: pizza_shop_clone
+      threads: 4
+      keyfile: "{{ env_var('SA_KEYFILE') }}"
+      job_execution_timeout_seconds: 300
+      job_retries: 1
+      priority: interactive
+      location: australia-southeast1
   target: dev
