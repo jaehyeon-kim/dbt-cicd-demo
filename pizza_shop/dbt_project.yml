@@ -32,3 +32,6 @@ models:
   pizza_shop:
     # Config indicated by + and applies to all files under models/example/
     +materialized: view
+
+vars:
+  ds_suffix: "dev"

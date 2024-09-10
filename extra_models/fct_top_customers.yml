@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: fct_top_customers
+    tests:
+      - dbt_utils.expression_is_true:
+          expression: "total_quantity >= 0"
+      - dbt_utils.expression_is_true:
+          expression: "total_price >= 0"
+    columns:
+      - name: user_id
+        description: Natural key of users
+      - name: first_name
+        description: First name
+      - name: last_name
+        description: Last name
+      - name: total_quantity
+        description: Total quantity purchased by user
+      - name: total_price
+        description: Total price spent by user

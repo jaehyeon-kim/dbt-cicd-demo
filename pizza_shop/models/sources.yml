@@ -2,7 +2,7 @@ version: 2
 
 sources:
   - name: raw
-    schema: pizza_shop
+    schema: pizza_shop_{{ var ('ds_suffix') }}
     tables:
       - name: users
         identifier: staging_users
